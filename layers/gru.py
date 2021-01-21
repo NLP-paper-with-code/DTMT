@@ -13,11 +13,11 @@ class TransitionGRUCell(nn.Module):
 
     self.reset_gate = nn.Sequential(
       nn.Linear(hidden_size, hidden_size, bias=bias),
-      nn.ReLU(),
+      nn.Sigmoid(),
     )
     self.update_gate = nn.Sequential(
       nn.Linear(hidden_size, hidden_size, bias=bias),
-      nn.ReLU(),
+      nn.Sigmoid(),
     )
     self.h_hat_linear = nn.Linear(hidden_size, hidden_size, bias=bias)
 
@@ -59,11 +59,11 @@ class LinearTransformationEnhancedGRUCell(nn.Module):
 
     self.reset_gate = nn.Sequential(
       nn.Linear(input_size, hidden_size),
-      nn.ReLU()
+      nn.Sigmoid()
     )
     self.update_gate = nn.Sequential(
       nn.Linear(input_size, hidden_size),
-      nn.ReLU(),
+      nn.Sigmoid(),
     )
     self.h_l_linear = nn.Linear(hidden_size, hidden_size)
     self.x_l_linear = nn.Linear(input_size, hidden_size)
@@ -72,7 +72,7 @@ class LinearTransformationEnhancedGRUCell(nn.Module):
     self.H = nn.Linear(input_size, hidden_size)
 
   def forward(self, x, h_minus_one):
-    l_t = torch.relu(self.x_l_linear(x) + self.h_h_linear(h_minus_one))
+    l_t = torch.sigmoid(self.x_l_linear(x) + self.h_h_linear(h_minus_one))
     h_hat = torch.tanh(self.x_h_linear(x) + self.reset_gate(x) * self.h_h_linear(h_minus_one)) + l_t * self.H(x)
     h_t = (1 - self.update_gate(x)) * h_minus_one + self.update_gate(x) * h_hat
 
