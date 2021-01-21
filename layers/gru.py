@@ -2,13 +2,13 @@ import torch
 import torch.nn as nn
 
 class TransitionGRUCell(nn.Module):
+  """
+  hidden_size (int): hidden state dimension
+  bias (bool): default: True, if false not use bias on every single linear layer
+  """
   def __init__(
     self, hidden_size, bias=True,
   ):
-    """
-    hidden_size (int): hidden state dimension
-    bias (bool): default: True, if false not use bias on every single linear layer
-    """
     super().__init__()
 
     self.reset_gate = nn.Sequential(
@@ -29,14 +29,14 @@ class TransitionGRUCell(nn.Module):
     
 
 class TransitionGRU(nn.Module):
+  """
+  hidden_size (int): hidden state dimension
+  num_layer (int): number of TransitionGRUCell
+  bias (bool): default: True, if false not use bias on every single linear layer
+  """
   def __init__(
     self, hidden_size, num_layer=1, bias=True,
   ):
-    """
-    hidden_size (int): hidden state dimension
-    num_layer (int): number of TransitionGRUCell
-    bias (bool): default: True, if false not use bias on every single linear layer
-    """
     super().__init__()
     self.gru_cells = [TransitionGRUCell(hidden_size, bias) for _ in range(num_layer)]
 
@@ -49,12 +49,12 @@ class TransitionGRU(nn.Module):
     return hidden
 
 class LinearTransformationEnhancedGRUCell(nn.Module):
+  """
+  input_size (int): input sequence dimension
+  hidden_size (int): hidden state dimension
+  bias (bool): default: True, if false not use bias on every single linear layer
+  """
   def __init__(self, input_size, hidden_size, bias=True):
-    """
-    input_size (int): input sequence dimension
-    hidden_size (int): hidden state dimension
-    bias (bool): default: True, if false not use bias on every single linear layer
-    """
     super().__init__()
 
     self.reset_gate = nn.Sequential(
@@ -79,13 +79,13 @@ class LinearTransformationEnhancedGRUCell(nn.Module):
     return h_t
 
 class LinearTransformationEnhancedGRU(nn.Module):
+  """
+  input_size (int): input sequence dimension
+  hidden_size (int): hidden state dimension
+  num_layer (int): number of LinearTransformationEnhancedGRUCell
+  bias (bool): default: True, if false not use bias on every single linear layer
+  """
   def __init__(self, input_size, hidden_size, num_layer=1, bias=True):
-    """
-    input_size (int): input sequence dimension
-    hidden_size (int): hidden state dimension
-    num_layer (int): number of LinearTransformationEnhancedGRUCell
-    bias (bool): default: True, if false not use bias on every single linear layer
-    """
     super().__init__()
     self.gru_cells = [LinearTransformationEnhancedGRUCell(input_size, hidden_size, bias) for _ in range(num_layer)]
 
