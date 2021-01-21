@@ -91,8 +91,9 @@ class LinearTransformationEnhancedGRU(nn.Module):
 
   def forward(self, x, hidden_zero):
     hidden = hidden_zero
-    for cell in self.gru_cells:
-      hidden = cell(x, hidden)
+    for x_t in x:
+      for cell in self.gru_cells:
+        hidden = cell(x_t, hidden)
 
     return hidden
 
@@ -100,7 +101,7 @@ if __name__ == '__main__':
   t_gru = TransitionGRU(5, num_layer=5)
   l_gru = LinearTransformationEnhancedGRU(10, 5, num_layer=5)
   
-  x = torch.randn(10)
+  x = torch.randn(10, 10)
   h = torch.randn(5)
 
   t_gru_hidden = t_gru(h)
