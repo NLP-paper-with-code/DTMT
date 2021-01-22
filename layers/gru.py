@@ -26,27 +26,6 @@ class TransitionGRUCell(nn.Module):
     h_t = (1 - self.update_gate(h_minus_one)) * h_minus_one + self.update_gate(h_minus_one) * h_hat
 
     return h_t
-    
-
-class TransitionGRU(nn.Module):
-  """
-  hidden_size (int): hidden state dimension
-  num_layer (int): number of TransitionGRUCell
-  bias (bool): default: True, if false not use bias on every single linear layer
-  """
-  def __init__(
-    self, hidden_size, num_layer=1, bias=True,
-  ):
-    super().__init__()
-    self.gru_cells = [TransitionGRUCell(hidden_size, bias) for _ in range(num_layer)]
-
-  def forward(self, hidden_zero):
-    hidden = hidden_zero
-
-    for cell in self.gru_cells:
-      hidden = cell(hidden)
-    
-    return hidden
 
 class LinearTransformationEnhancedGRUCell(nn.Module):
   """
@@ -78,35 +57,61 @@ class LinearTransformationEnhancedGRUCell(nn.Module):
 
     return h_t
 
-class LinearTransformationEnhancedGRU(nn.Module):
+class DeepTransitionRNN(nn.Module):
   """
   input_size (int): input sequence dimension
   hidden_size (int): hidden state dimension
-  num_layer (int): number of LinearTransformationEnhancedGRUCell
+  deep (int): number of TransitionGRUCell
+  bidirection (bool): is bidirectional DeepTransitionRNN
   bias (bool): default: True, if false not use bias on every single linear layer
   """
-  def __init__(self, input_size, hidden_size, num_layer=1, bias=True):
+  def __init__(self, input_size, hidden_size, bidirection=False, deep=1, bias=True):
     super().__init__()
-    self.gru_cells = [LinearTransformationEnhancedGRUCell(input_size, hidden_size, bias) for _ in range(num_layer)]
+    
+    self.l_gru = LinearTransformationEnhancedGRUCell(input_size, hidden_size, bias)
+    self.t_grus = nn.Sequential(*[TransitionGRUCell(hidden_size, bias) for _ in range(deep)])
+    
+    self.bidirection = bidirection
+    if self.bidirection:
+      self.reversed_l_gru = LinearTransformationEnhancedGRUCell(input_size, hidden_size, bias)
+      self.reversed_t_grus = nn.Sequential(*[TransitionGRUCell(hidden_size, bias) for _ in range(deep)])
 
-  def forward(self, x, hidden_zero):
-    hidden = hidden_zero
-    for x_t in x:
-      for cell in self.gru_cells:
-        hidden = cell(x_t, hidden)
+  def forward(self, x, h_0):
+    h_sequences = []
+    
+    h = h_0
+    
+    if self.bidirection:
+      reversed_h = h_0
+      reversed_x = torch.flip(x, [1])
 
-    return hidden
+    batch_size, seq_len, _ = x.size()
+    
+    for t in range(seq_len):
+      x_t = x[:, t, :]
+      
+      if self.bidirection:
+        reversed_x_t = reversed_x[:, t, :]
+
+      h = self.l_gru(x_t, h)
+      h = self.t_grus(h)
+
+      if self.bidirection:
+        reversed_h = self.reversed_l_gru(reversed_x_t, reversed_h)
+        reversed_h = self.reversed_t_grus(reversed_h)
+        h_sequences.append(torch.cat((h, reversed_h), dim=-1))
+      else:
+        h_sequences.append(h)
+
+    h_sequences = torch.stack(h_sequences).transpose(1, 0)
+
+    return h_sequences
 
 if __name__ == '__main__':
-  t_gru = TransitionGRU(5, num_layer=5)
-  l_gru = LinearTransformationEnhancedGRU(10, 5, num_layer=5)
+  x = torch.randn(2, 10, 10)
   
-  x = torch.randn(10, 10)
-  h = torch.randn(5)
+  rnn = DeepTransitionRNN(10, 10)
+  h_0 = torch.zeros(2, 10)
+  h = rnn(x, h_0)
 
-  t_gru_hidden = t_gru(h)
-  
-  l_gru_hidden = l_gru(x, h)
-
-  print(t_gru_hidden)
-  print(l_gru_hidden)
+  print(h)
